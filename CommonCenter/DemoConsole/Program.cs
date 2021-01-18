@@ -7,8 +7,6 @@ namespace DemoConsole
     {
         static void Main(string[] args)
         {
-            CommonService.Excel.Analysis analysis = new CommonService.Excel.Analysis(@"D:\Resource\Import_offline_orders_template(2).xlsx");
-            List<Models.OjbectCreate.OrderEntity> entities = analysis.Sheet<Models.OjbectCreate.OrderEntity>("order");
             Console.ReadKey();
         }
 
