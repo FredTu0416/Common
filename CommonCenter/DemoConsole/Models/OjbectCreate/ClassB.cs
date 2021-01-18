@@ -4,7 +4,7 @@ using System.Text;
 
 namespace DemoConsole.Models.OjbectCreate
 {
-    public class ClassB: CommonService.IExpressionGenerate
+    public class ClassB
     {
         private string _name;
 

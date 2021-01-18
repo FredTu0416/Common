@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace DemoConsole
 {
@@ -6,28 +7,8 @@ namespace DemoConsole
     {
         static void Main(string[] args)
         {
-            Func<string,int,Models.OjbectCreate.ClassB> funcInitClassB = CommonService.Assembly.CreateInstance<string,int,Models.OjbectCreate.ClassB>();
-            //var classA = funcInitClassA();
-
-            var result1 = StopWatcher(() => {
-                for (int i = 0; i < 100000; i++)
-                {
-                    Activator.CreateInstance(typeof(Models.OjbectCreate.ClassB), "Fred", 31);
-                }
-            });
-
-            Console.WriteLine($"Activator.CreateInstance cost: {result1}");
-
-            var result2 = StopWatcher(() => {
-                for (int i = 0; i < 100000; i++)
-                {
-                    funcInitClassB("Fred",31);
-                }
-            });
-
-            Console.WriteLine($"Expression CreateInstance cost: {result2}");
-            
-
+            CommonService.Excel.Analysis analysis = new CommonService.Excel.Analysis(@"D:\Resource\Import_offline_orders_template(2).xlsx");
+            List<Models.OjbectCreate.OrderEntity> entities = analysis.Sheet<Models.OjbectCreate.OrderEntity>("order");
             Console.ReadKey();
         }
 
