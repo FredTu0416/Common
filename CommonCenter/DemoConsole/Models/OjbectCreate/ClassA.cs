@@ -7,10 +7,9 @@ namespace DemoConsole.Models.OjbectCreate
 {
     public class ClassA
     {
-        [ExcelEntity(Field = "name")]
+        [ExcelEntity(Field = "姓名")]
         public string Name { get; set; }
 
-        [ExcelEntity(Field = "id")]
         public string ID { get; set; }
     }
 }

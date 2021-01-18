@@ -60,5 +60,10 @@ namespace CommonService
             var body_call = Expression.Call(body_instance, property.GetSetMethod(), body_value);
             return Expression.Lambda<Action<TInstance, TValue>>(body_call, param_instance, param_value).Compile();
         }
+
+        public static Func<object, object> GetValue(PropertyInfo property)
+        {
+            throw new Exception();
+        }
     }
 }
