@@ -61,9 +61,28 @@ namespace CommonService
             return Expression.Lambda<Action<TInstance, TValue>>(body_call, param_instance, param_value).Compile();
         }
 
-        public static Func<object, object> GetValue(PropertyInfo property)
+        public static void SetValue(PropertyInfo property, object instance, object value)
         {
-            throw new Exception();
+            var func = SetValue(property);
+            func(instance, value);
+        }
+
+        public static Func<T,object> GetValue<T>(PropertyInfo property)
+        {
+            var param_instance = Expression.Parameter(typeof(T), "instance");
+            var param_val = Expression.Property(param_instance, property);
+            var convert = Expression.Convert(param_val, typeof(object)); 
+            var getValue = Expression.Lambda<Func<T,object>>(convert, param_instance); 
+            return getValue.Compile();
+        }
+
+        public static object GetValue<T>(PropertyInfo property,T instance)
+        {
+            var param_instance = Expression.Parameter(typeof(T), "instance");
+            var param_val = Expression.Property(param_instance, property);
+            var convert = Expression.Convert(param_val, typeof(object));
+            var getValue = Expression.Lambda<Func<T, object>>(convert, param_instance);
+            return getValue.Compile()(instance);
         }
     }
 }

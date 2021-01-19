@@ -61,7 +61,6 @@ namespace CommonService.Excel
                 throw new Exception($"SheetName exists {sheetName}");
 
             ISheet sheet = this._workbook.CreateSheet(sheetName);
-            //first row
             IRow firstRow = sheet.CreateRow(0);
 
             var type = typeof(T);
@@ -72,12 +71,22 @@ namespace CommonService.Excel
             for (int i = 0; i < properties.Length; i++)
             {
                 var excelEntity = properties[i].GetCustomAttribute<ExcelEntityAttribute>();
-                var fieldName = excelEntity.Field;
+
+                var fieldName = "";
+                var isRequired = false;
+
+                if (excelEntity == null)
+                    fieldName = properties[i].Name;
+                else
+                {
+                    fieldName = excelEntity.Field;
+                    isRequired = excelEntity.IsRequired;
+                }
                 mapping.Add(properties[i], new Common.AttrProp()
                 {
                     FieldName = fieldName,
                     Index = i,
-                    IsRequired = excelEntity.IsRequired
+                    IsRequired = isRequired
                 });
 
                 firstRow.CreateCell(i).SetCellValue(fieldName);
@@ -91,21 +100,34 @@ namespace CommonService.Excel
                 IRow row = sheet.CreateRow(row_index);
                 foreach (var item in mapping)
                 {
-                    row.CreateCell(item.Value.Index).SetCellValue("");
+                    var value = Assembly.GetValue<T>(item.Key, entities[i]);
+                    ICell cell = row.CreateCell(item.Value.Index);
+
+                    if (item.Key.PropertyType.Name == typeof(decimal).Name || item.Key.PropertyType.Name == typeof(int).Name ||
+                        item.Key.PropertyType.Name == typeof(float).Name || item.Key.PropertyType.Name == typeof(double).Name)
+                    {
+                        cell.SetCellType(CellType.Numeric);
+                        cell.SetCellValue((double)value);
+                    }
+                    else if(item.Key.PropertyType.Name == typeof(string).Name)
+                    {                        
+                        cell.SetCellType(CellType.String);
+                        cell.SetCellValue(value.ToString());
+                    }
+                    else if(item.Key.PropertyType.Name == typeof(DateTime).Name)
+                    {
+                        cell.SetCellType(CellType.String);
+                        cell.SetCellValue(value.ToString());
+                    }
                 }
             }
         }
 
-        public async Task<byte[]> Buffer()
+        public void Save(string path)
         {
-            using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
+            using (System.IO.FileStream fs = System.IO.File.Create(path))
             {
-                _workbook.Write(ms);
-                ms.Position = 0;
-                byte[] buffer = new byte[ms.Length];
-                await ms.ReadAsync(buffer, 0, buffer.Length);
-                _workbook.Close();
-                return buffer;
+                _workbook.Write(fs);
             }
         }
     }

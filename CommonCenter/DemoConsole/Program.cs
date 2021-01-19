@@ -7,7 +7,7 @@ namespace DemoConsole
     {
         static void Main(string[] args)
         {
-            CommonService.Excel.Export export = new CommonService.Excel.Export();
+            CommonService.Excel.Export export = new CommonService.Excel.Export(CommonService.Excel.Common.ExcelVersion.Excel2007);
             export.Sheet("ClassA_Sheet", new List<Models.OjbectCreate.ClassA>() {
                 new Models.OjbectCreate.ClassA(){
                      ID="123",
@@ -24,6 +24,9 @@ namespace DemoConsole
                       Name="Jason"
                 }
             });
+
+            export.Save(@"D:\a.xlsx");
+            Console.WriteLine("Export Completed");
             Console.ReadKey();
         }
 
