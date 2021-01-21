@@ -99,7 +99,7 @@ namespace OpenCVService
         }
         #endregion
 
-        #region 人脸定位
+        #region Face
         public Rect[] Face(bool useGray=false, bool isAutoDrawingRect=false)
         {
             Mat newSource = new Mat();
@@ -198,6 +198,17 @@ namespace OpenCVService
         public void Stylization(float sigmaS = 60f, float sigmaR = 0.45f)
         {
             Cv2.Stylization(_matSource, _matSource, sigmaS, sigmaR);
+        }
+
+        /// <summary>
+        /// 调整颜色
+        /// </summary>
+        /// <param name="gainB"></param>
+        /// <param name="gainG"></param>
+        /// <param name="gainR"></param>
+        public void Color(float gainB,float gainG,float gainR)
+        {
+            OpenCvSharp.XPhoto.CvXPhoto.ApplyChannelGains(_matSource, _matSource, gainB, gainG, gainR);
         }
         #endregion
 
