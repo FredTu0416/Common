@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CommonService\CommonService.csproj" />
+    <ProjectReference Include="..\OpenCVService\OpenCVService.csproj" />
   </ItemGroup>
 
 </Project>
