@@ -8,12 +8,12 @@ namespace CommonService.Excel
 {
     public class Analysis
     {
-        private ExcelVersion _excelType;
+        private Common.ExcelVersion _excelType;
         private IWorkbook _workbook;
 
         public Analysis(string path)
         {
-            _excelType = ExcelVersion.NotSupported;
+            _excelType = Common.ExcelVersion.NotSupported;
             var fileInfo = initFileAccess(path);
             initStreamAccess(fileInfo);
 
@@ -45,7 +45,7 @@ namespace CommonService.Excel
         }
 
         #region Private
-        private T initProperty<T>(IRow row, Dictionary<PropertyInfo, AttrProp> mapping) where T: class
+        private T initProperty<T>(IRow row, Dictionary<PropertyInfo, Common.AttrProp> mapping) where T: class
         {
             var _instance = Assembly.CreateInstance<T>()();
 
@@ -114,9 +114,9 @@ namespace CommonService.Excel
             return _instance;
         }
 
-        private Dictionary<PropertyInfo, AttrProp> initMapping(IRow row, Dictionary<PropertyInfo, Dictionary<string, object>> cusAttrDict)
+        private Dictionary<PropertyInfo, Common.AttrProp> initMapping(IRow row, Dictionary<PropertyInfo, Dictionary<string, object>> cusAttrDict)
         {
-            Dictionary<PropertyInfo, AttrProp> mapping = new Dictionary<PropertyInfo, AttrProp>();
+            Dictionary<PropertyInfo, Common.AttrProp> mapping = new Dictionary<PropertyInfo, Common.AttrProp>();
             List<ICell> cells = row.Cells;
             for (int i = 0; i < cells.Count; i++)
             {
@@ -127,7 +127,7 @@ namespace CommonService.Excel
                     throw new NotSupportedException($"Column {columnName} was not define");
 
                 mapping.Add(attrInfo.Value.Key,
-                    new AttrProp()
+                    new Common.AttrProp()
                     {
                         Index = i,
                         IsRequired = (bool)attrInfo.Value.Value["IsRequired"]
@@ -189,9 +189,9 @@ namespace CommonService.Excel
             stream.CopyTo(mStream);
             mStream.Position = 0;
 
-            if (_excelType == ExcelVersion.Excel2003)
+            if (_excelType == Common.ExcelVersion.Excel2003)
                 this._workbook = new NPOI.HSSF.UserModel.HSSFWorkbook(mStream);
-            else if (_excelType == ExcelVersion.Excel2007)
+            else if (_excelType == Common.ExcelVersion.Excel2007)
                 this._workbook = new NPOI.XSSF.UserModel.XSSFWorkbook(mStream);
 
             stream.Close();
@@ -207,28 +207,13 @@ namespace CommonService.Excel
             var extension = fileInfo.Extension;
             
             if (".xls".Equals(extension, StringComparison.OrdinalIgnoreCase))
-                _excelType = ExcelVersion.Excel2003;
+                _excelType = Common.ExcelVersion.Excel2003;
             else if (".xlsx".Equals(extension, StringComparison.OrdinalIgnoreCase))
-                _excelType = ExcelVersion.Excel2007;
+                _excelType = Common.ExcelVersion.Excel2007;
             else
                 throw new NotSupportedException($"File type not supported: {extension}");
 
             return fileInfo;
-        }
-        #endregion
-
-        #region Structs & Enum
-        public enum ExcelVersion
-        {
-            Excel2003,
-            Excel2007,
-            NotSupported
-        }
-
-        public struct AttrProp
-        {
-            public int Index { get; set; }
-            public bool IsRequired { get; set; }
         }
         #endregion
     }
