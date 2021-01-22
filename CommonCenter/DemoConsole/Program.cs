@@ -9,13 +9,12 @@ namespace DemoConsole
     {
         static void Main(string[] args)
         {
-            var input_path = @"C:\Users\shtr0\Pictures\gyy.jpg";
+            var input_path = @"C:\Users\shtr0\Pictures\alita.jpg";
             var output_path = @"C:\Users\shtr0\Pictures\Export\a.jpg";
 
             using (Image image = new Image(input_path))
             {
-                image.ReSize(new OpenCvSharp.Size(image.Width / 2, image.Height / 2));
-                image.Face1();
+                image.Tailoring(9);
                 image.Show(Image.ShowType.Changed);
             }
             Console.WriteLine("Completed");

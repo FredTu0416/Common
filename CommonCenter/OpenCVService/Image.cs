@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using OpenCvSharp;
 
 namespace OpenCVService
@@ -45,6 +46,8 @@ namespace OpenCVService
         public void ReSize(Size size)
         {
             _matSource = _matSource.Resize(size);
+            this._width = _matSource.Width;
+            this._height = _matSource.Height;
         }
 
         public void Gray()
@@ -209,6 +212,83 @@ namespace OpenCVService
         public void Color(float gainB,float gainG,float gainR)
         {
             OpenCvSharp.XPhoto.CvXPhoto.ApplyChannelGains(_matSource, _matSource, gainB, gainG, gainR);
+        }
+        #endregion
+
+        #region Cut
+
+        /// <summary>
+        /// 图片裁切-自动分割
+        /// </summary>
+        /// <param name="splitNumber">4,9</param>
+        public void Tailoring(int splitNumber=9)
+        {
+            var validation = new List<int>() { 4, 9 };
+            if (!validation.Contains(splitNumber))
+                throw new NotSupportedException($"SplitNumber:{splitNumber}");
+
+            if (this._width != this._height)
+            {
+                var size = this._width > this._height ?
+                        new Size(this._height, this._height) :
+                        new Size(this._width, this._width);
+                this.ReSize(size);
+            }
+
+            var v = (int)Math.Sqrt(splitNumber);
+
+            var w_h = this._width / v;
+
+            List<Rect> rects = new List<Rect>();
+
+            for (int row = 0; row < v; row++)
+            {
+                for (int column = 0; column < v; column++)
+                {
+                    int xLeft = column * w_h;
+                    int yLeft = row * w_h;
+
+                    var rect = new Rect(xLeft, yLeft, w_h, w_h);
+                    rects.Add(rect);
+                }
+            }
+
+            List<Mat> imgs = new List<Mat>();
+            if (rects.Count > 0)
+            {
+                foreach (var rect in rects)
+                {
+                    imgs.Add(_matSource[rect]);
+                }
+            }
+
+            for (int i = 0; i < imgs.Count; i++)
+            {
+                var img = imgs[i];
+                img.SaveImage(@$"C:\Users\shtr0\Pictures\Export\{i + 1}.jpg");
+            }
+        }
+
+        /// <summary>
+        /// 图片裁切
+        /// </summary>
+        /// <param name="marginLeft">左上顶点: 距离左边的偏移量</param>
+        /// <param name="marginTop">左上顶点: 距离顶边的偏移量</param>
+        /// <param name="width">裁切图宽度</param>
+        /// <param name="height">裁切图高度</param>
+        public void Tailoring(int marginLeft, int marginTop, int width, int height)
+        {
+            if (width <= 0 || height <= 0)
+                throw new ArgumentException($"Cut range error");
+            if (marginLeft < 0 || marginTop < 0)
+                throw new ArgumentException($"Start location error");
+            if (marginLeft + width > _width)
+                throw new ArgumentException("Width too large");
+            if (marginTop + height > _height)
+                throw new ArgumentException("Height too large");
+
+            var rect = new Rect(marginLeft, marginTop, width, height);
+            _matSource = _matSource[rect];
         }
         #endregion
 
