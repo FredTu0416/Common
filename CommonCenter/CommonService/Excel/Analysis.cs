@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 using System.Text;
+using System.Threading.Tasks;
 using NPOI.SS.UserModel;
 
 namespace CommonService.Excel
@@ -10,6 +12,11 @@ namespace CommonService.Excel
     {
         private Common.ExcelVersion _excelType;
         private IWorkbook _workbook;
+        private Stopwatch _stopwatch;
+
+        public delegate void AnalysisMsgDelegate(string msg, MessageWriteType writeType, Nullable<ConsoleColor> consoleColor = null, Nullable<int> coverLine = null);
+
+        public event AnalysisMsgDelegate AnalysisMessage;
 
         public Analysis(string path)
         {
@@ -21,22 +28,41 @@ namespace CommonService.Excel
                 throw new ArgumentNullException($"IWorkBook init failed.");
         }
 
+        public async Task<List<T>> SheetAsync<T>(string sheetName) where T : class
+        {
+            var task1 = new TaskFactory<List<T>>().StartNew(() =>
+            {
+                AnalysisMessage?.Invoke($"Start to analyzing Sheet - {sheetName}.", MessageWriteType.NewLine, ConsoleColor.Red);
+                _stopwatch.Start();
+                var resp = Sheet<T>(sheetName);
+                _stopwatch.Stop();
+                AnalysisMessage?.Invoke($"{sheetName} analysis completed. Total Cost: {_stopwatch.ElapsedMilliseconds}ms", MessageWriteType.NewLine, ConsoleColor.Green);
+                return resp;
+            });
+
+            return await task1;
+        }
+
         public List<T> Sheet<T>(string sheetName) where T : class
         {
             ISheet sheet = getSheetByName(sheetName);
 
             IRow firstRow = sheet.GetRow(0);
+
             if (firstRow.Cells.Count == 0)
                 throw new ArgumentNullException($"Excel sheet {sheetName} Line 1 is empty");
 
             var cusAttrDict = initExcelAttribute<T>();
             var mapping = initMapping(firstRow, cusAttrDict);
 
+            AnalysisMessage?.Invoke($"Total Row: {sheet.LastRowNum}.", MessageWriteType.NewLine);
             List<T> entities = new List<T>();
+
+            var topCursor = Console.CursorTop;
             for (int i = 1; i <= sheet.LastRowNum; i++)
             {
+                AnalysisMessage?.Invoke($"line {i}", MessageWriteType.NewLine, ConsoleColor.Green, topCursor);
                 IRow row = sheet.GetRow(i);
-
                 T entity = initProperty<T>(row, mapping);
                 entities.Add(entity);
             }
@@ -45,25 +71,25 @@ namespace CommonService.Excel
         }
 
         #region Private
-        private T initProperty<T>(IRow row, Dictionary<PropertyInfo, Common.AttrProp> mapping) where T: class
+
+        private T initProperty<T>(IRow row, Dictionary<PropertyInfo, Common.AttrProp> mapping) where T : class
         {
             var _instance = Assembly.CreateInstance<T>()();
 
             foreach (var item in mapping)
             {
+                var cell = row.GetCell(item.Value.Index, MissingCellPolicy.RETURN_BLANK_AS_NULL);
+                if (cell is null)
+                    continue;
+
                 var isRequired = item.Value.IsRequired;
-                var cellTypeName = row.Cells[item.Value.Index].CellType.ToString();
+                var cellTypeName = row.GetCell(item.Value.Index, MissingCellPolicy.CREATE_NULL_AS_BLANK).CellType.ToString();
                 var propertyTypeName = item.Key.PropertyType.Name;
 
-                if (propertyTypeName == typeof(int).Name || propertyTypeName == typeof(double).Name || 
+                if (propertyTypeName == typeof(int).Name || propertyTypeName == typeof(double).Name ||
                     propertyTypeName == typeof(float).Name || propertyTypeName == typeof(decimal).Name)
                 {
                     if (!cellTypeName.Equals("numeric", StringComparison.OrdinalIgnoreCase))
-                        throw new ArgumentException($"Excel column data type was wrong. At row {row.RowNum + 1}, column {item.Value.Index + 1}");
-                }
-                if (propertyTypeName == typeof(string).Name)
-                {
-                    if (!cellTypeName.Equals("string", StringComparison.OrdinalIgnoreCase))
                         throw new ArgumentException($"Excel column data type was wrong. At row {row.RowNum + 1}, column {item.Value.Index + 1}");
                 }
                 if (propertyTypeName == typeof(bool).Name)
@@ -105,6 +131,8 @@ namespace CommonService.Excel
                             Assembly.SetValue(item.Key)(_instance, (float)v.NumericCellValue);
                         else if (item.Key.PropertyType.Name == typeof(decimal).Name)
                             Assembly.SetValue(item.Key)(_instance, (decimal)v.NumericCellValue);
+                        else if (item.Key.PropertyType.Name == typeof(string).Name)
+                            Assembly.SetValue(item.Key)(_instance, v.NumericCellValue.ToString());
                     }
                 }
                 else
@@ -178,7 +206,10 @@ namespace CommonService.Excel
                 }
             }
             if (sheet == null)
+            {
+                AnalysisMessage?.Invoke($"Sheet - {sheetName} dose not exist.", MessageWriteType.NewLine);
                 throw new ArgumentNullException($"Sheet not found: {sheetName}");
+            }
             return sheet;
         }
 
@@ -205,7 +236,7 @@ namespace CommonService.Excel
                 throw new System.IO.FileNotFoundException($"In path {path}");
 
             var extension = fileInfo.Extension;
-            
+
             if (".xls".Equals(extension, StringComparison.OrdinalIgnoreCase))
                 _excelType = Common.ExcelVersion.Excel2003;
             else if (".xlsx".Equals(extension, StringComparison.OrdinalIgnoreCase))
@@ -215,6 +246,17 @@ namespace CommonService.Excel
 
             return fileInfo;
         }
-        #endregion
+
+        #endregion Private
+
+        #region Enum
+
+        public enum MessageWriteType
+        {
+            InLine = 0x01,
+            NewLine = 0x02
+        }
+
+        #endregion Enum
     }
 }
